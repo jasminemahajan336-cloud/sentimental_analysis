@@ -9,7 +9,7 @@ Original file is located at
 
 
 
- import gradio as gr
+import gradio as gr
 import os
 import requests
 
