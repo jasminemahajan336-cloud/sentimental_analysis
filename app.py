@@ -9,53 +9,52 @@ Original file is located at
 
 
 
-import gradio as gr
+ import gradio as gr
 import os
-from transformers import pipeline
+import requests
 
-# Initialize the huggingface pipeline
-classifier = pipeline("sentiment-analysis")
+# Point to Hugging Face's free serverless API
+API_URL = "https://api-inference.huggingface.co/models/distilbert-base-uncased-finetuned-sst-2-english"
 
 def analysis_sentimental(text):
-    # 1. Handle Empty input
     if not text or not text.strip():
         return "Empty Input", "0.00%"
-
-    # 2. Analyze multiple sentences (Allow users to enter several sentences, one per line)
+    
     sentences = [line.strip() for line in text.split('\n') if line.strip()]
-
     labels = []
     scores = []
-
+    
     for sentence in sentences:
-        result = classifier(sentence)[0]
-
-        # Format the label
-        labels.append(f"{sentence} -> {result['label']}")
-
-        # 3. Format score up to two decimal places as a percentage
-        score_pct = result['score'] * 100
-        scores.append(f"{sentence} -> {score_pct:.2f}%")
-
+        try:
+            # Ask the Hugging Face server to analyze the text
+            response = requests.post(API_URL, json={"inputs": sentence})
+            data = response.json()
+            
+            # Extract the top result
+            result = data[0][0] 
+            
+            labels.append(f"{sentence} -> {result['label']}")
+            score_pct = result['score'] * 100
+            scores.append(f"{sentence} -> {score_pct:.2f}%")
+        except Exception as e:
+            labels.append(f"{sentence} -> Error (Waking up model, try again in 10s)")
+            scores.append(f"{sentence} -> 0.00%")
+            
     return "\n".join(labels), "\n".join(scores)
 
 # Create the Gradio App
 app = gr.Interface(
     fn=analysis_sentimental,
-    # 4. Make the input box larger (lines=5)
     inputs=gr.Textbox(
-        lines=5,
-        placeholder="Enter sentences here (one per line)...",
+        lines=5, 
+        placeholder="Enter sentences here (one per line)...", 
         label="Input Text"
     ),
-    # 5. Display both label and score separately
     outputs=[
-        gr.Textbox(label="Sentiment Label"),
+        gr.Textbox(label="Sentiment Label"), 
         gr.Textbox(label="Confidence Score")
     ],
-    # 6. Add a title to the app
     title="Sentiment Analysis App",
-    # 7. Add ready-made example sentences
     examples=[
         ["I am absolutely thrilled with this new update!"],
         ["I'm really frustrated that my delivery is late."],
