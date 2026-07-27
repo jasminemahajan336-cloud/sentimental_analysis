@@ -11,10 +11,7 @@ Original file is located at
 
 import gradio as gr
 import os
-import requests
-
-# Point to Hugging Face's free serverless API
-API_URL = "https://api-inference.huggingface.co/models/distilbert-base-uncased-finetuned-sst-2-english"
+from textblob import TextBlob
 
 def analysis_sentimental(text):
     if not text or not text.strip():
@@ -26,18 +23,26 @@ def analysis_sentimental(text):
     
     for sentence in sentences:
         try:
-            # Ask the Hugging Face server to analyze the text
-            response = requests.post(API_URL, json={"inputs": sentence})
-            data = response.json()
+            # Run the local TextBlob AI
+            blob = TextBlob(sentence)
+            polarity = blob.sentiment.polarity
             
-            # Extract the top result
-            result = data[0][0] 
+            # TextBlob gives a score from -1.0 (Negative) to 1.0 (Positive)
+            if polarity > 0:
+                label = "POSITIVE"
+            elif polarity < 0:
+                label = "NEGATIVE"
+            else:
+                label = "NEUTRAL"
+                
+            # Convert the score into a clean percentage
+            score_pct = abs(polarity) * 100
             
-            labels.append(f"{sentence} -> {result['label']}")
-            score_pct = result['score'] * 100
+            labels.append(f"{sentence} -> {label}")
             scores.append(f"{sentence} -> {score_pct:.2f}%")
+            
         except Exception as e:
-            labels.append(f"{sentence} -> Error (Waking up model, try again in 10s)")
+            labels.append(f"{sentence} -> Error")
             scores.append(f"{sentence} -> 0.00%")
             
     return "\n".join(labels), "\n".join(scores)
