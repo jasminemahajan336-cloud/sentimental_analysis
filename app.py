@@ -7,7 +7,7 @@ Original file is located at
     https://colab.research.google.com/drive/1nNPjAW7RVGUnV-RXaucJNp619yl1jrbv
 """
 
-!pip install gradio transformers torch
+
 
 import gradio as gr
 import os
